@@ -98,12 +98,20 @@ class StrokeGuide(QWidget):
         super().__init__(parent)
         self.setMinimumHeight(190)
         self.character = ""
+        self.theme = None
         self.strokes = []
         self._stroke = 0
         self._progress = 0.0
         self._pause = 0
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
+
+    def set_theme(self, theme):
+        self.theme = theme
+        self.update()
+
+    def _c(self, key, default):
+        return self.theme[key] if self.theme else default
 
     def set_character(self, character):
         self.character = character
@@ -136,8 +144,8 @@ class StrokeGuide(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.setPen(QPen(QColor("#e1e7f2"), 1))
-        p.setBrush(QColor("#fbfcff"))
+        p.setPen(QPen(QColor(self._c("cv_border", "#e1e7f2")), 1))
+        p.setBrush(QColor(self._c("cv_bg", "#fbfcff")))
         p.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 14, 14)
         p.setBrush(Qt.BrushStyle.NoBrush)
         side = min(self.width(), self.height())
@@ -146,20 +154,21 @@ class StrokeGuide(QWidget):
         p.scale(scale, scale)
         if not self.strokes:
             p.resetTransform()
-            p.setPen(QColor("#24395f"))
+            p.setPen(QColor(self._c("sg_text", "#24395f")))
             font = QFont("Meiryo")
             font.setPixelSize(int(side * 0.7))
             p.setFont(font)
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.character)
             return
 
-        p.setPen(QPen(QColor("#e3e8f0"), 0.6, Qt.PenStyle.DashLine))
+        p.setPen(QPen(QColor(self._c("sg_axis", "#e3e8f0")), 0.6,
+                              Qt.PenStyle.DashLine))
         p.drawLine(QPointF(54.5, 0), QPointF(54.5, 109))
         p.drawLine(QPointF(0, 54.5), QPointF(109, 54.5))
 
-        done_pen = QPen(QColor("#9aa9c4"), 4.2, Qt.PenStyle.SolidLine,
+        done_pen = QPen(QColor(self._c("sg_done", "#9aa9c4")), 4.2, Qt.PenStyle.SolidLine,
                         Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-        live_pen = QPen(QColor("#2563eb"), 4.6, Qt.PenStyle.SolidLine,
+        live_pen = QPen(QColor(self._c("sg_live", "#2563eb")), 4.6, Qt.PenStyle.SolidLine,
                         Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
         number_font = QFont("Segoe UI")
         number_font.setPixelSize(7)
@@ -178,13 +187,12 @@ class StrokeGuide(QWidget):
             if live and len(visible) >= 2:
                 self._draw_arrow(p, visible)
             p.setFont(number_font)
-            p.setPen(QColor("#dc2626"))
+            p.setPen(QColor(self._c("sg_mark", "#dc2626")))
             start = points[0]
             p.drawText(QPointF(start.x() - 6, start.y() - 2), str(index + 1))
         p.end()
 
-    @staticmethod
-    def _draw_arrow(p, visible):
+    def _draw_arrow(self, p, visible):
         tip = visible[-1]
         back = visible[max(0, len(visible) - 5)]
         angle = math.atan2(tip.y() - back.y(), tip.x() - back.x())
@@ -194,6 +202,6 @@ class StrokeGuide(QWidget):
         right = QPointF(tip.x() - size * math.cos(angle + 0.45),
                         tip.y() - size * math.sin(angle + 0.45))
         p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QColor("#dc2626"))
+        p.setBrush(QColor(self._c("sg_mark", "#dc2626")))
         p.drawPolygon(QPolygonF([tip, left, right]))
         p.setBrush(Qt.BrushStyle.NoBrush)

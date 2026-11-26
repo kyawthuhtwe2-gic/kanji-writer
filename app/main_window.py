@@ -24,6 +24,7 @@ from app.progress_store import (
     save_settings,
     save_state,
 )
+from app.themes import THEMES, build_stylesheet
 from app.stroke_guide import StrokeGuide
 from app.writing_canvas import WritingCanvas
 
@@ -122,6 +123,12 @@ class MainWindow(QMainWindow):
         self.category_select.addItems(PRACTICE_SETS.keys())
         self.category_select.currentTextChanged.connect(self._change_category)
         header.addWidget(self.category_select)
+        self.theme_button = QPushButton()
+        self.theme_button.setObjectName("theme")
+        self.theme_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.theme_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.theme_button.clicked.connect(self._toggle_theme)
+        header.addWidget(self.theme_button)
         root.addLayout(header)
 
         body = QHBoxLayout()
@@ -290,7 +297,7 @@ class MainWindow(QMainWindow):
         self.progress_bar.setTextVisible(False)
         self.progress_bar.setFixedHeight(10)
         side_layout.addWidget(self.progress_bar)
-        self.next_button = QPushButton("Next")
+        self.next_button = QPushButton("Next (N)")
         self.next_button.setObjectName("primary")
         self.next_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.next_button.clicked.connect(self._next_character)
@@ -307,73 +314,27 @@ class MainWindow(QMainWindow):
         layout.addWidget(button)
 
     def _set_style(self):
-        self.setStyleSheet("""
-            QMainWindow, QWidget { background: #f3f5fb; color: #1b2438; }
-            QLabel, QRadioButton { background: transparent; }
-            QFrame#panel { background: #ffffff; border: 1px solid #dfe5f0;
-                           border-radius: 20px; }
-            QFrame#hero { background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                              stop:0 #f4f7ff, stop:1 #eef3ff);
-                          border: 1px solid #e1e9fb; border-radius: 16px; }
-            QFrame#hero QLabel { background: transparent; }
-            QLabel#title { font-size: 26px; font-weight: 800; color: #14213d; }
-            QLabel#subtitle { color: #6b778c; font-size: 12px; }
-            QLabel#eyebrow { color: #8592a8; font-weight: 700; font-size: 10px;
-                             letter-spacing: 1px; }
-            QLabel#target { color: #16213a; font-size: 58px; min-height: 70px; }
-            QLabel#reading { color: #2f55b8; font-size: 20px; font-weight: 700; }
-            QLabel#sectionTitle { color: #19253b; font-size: 14px; font-weight: 700; }
-            QLabel#result { color: #55627a; font-size: 12px; }
-            QLabel#score { color: #2f55b8; font-size: 30px; font-weight: 800; }
-            QLabel#banner { color: #6b778c; background: #f6f8fc; border-radius: 10px;
-                            padding: 8px 12px; font-size: 11px; }
-            QLabel#hint { color: #7a869b; font-size: 11px; }
-            QRadioButton { spacing: 8px; color: #334155; font-weight: 600; }
-            QRadioButton::indicator { width: 16px; height: 16px; border-radius: 9px;
-                                      border: 2px solid #c3cde0; background: white; }
-            QRadioButton::indicator:hover { border-color: #7f9be0; }
-            QRadioButton::indicator:checked { border: 2px solid #2f55b8;
-                background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5,
-                    fy:0.5, stop:0 #2f55b8, stop:0.5 #2f55b8, stop:0.56 white,
-                    stop:1 white); }
-            QSlider::groove:horizontal { height: 6px; border-radius: 3px;
-                                         background: #e3e9f4; }
-            QSlider::sub-page:horizontal { background: #6f8fe6; border-radius: 3px; }
-            QSlider::handle:horizontal { background: #2f55b8; width: 16px;
-                                         height: 16px; margin: -5px 0;
-                                         border-radius: 8px; border: 3px solid white; }
-            QComboBox { background: white; border: 1px solid #dbe3f0;
-                        border-radius: 12px; padding: 8px 14px; min-width: 110px;
-                        font-weight: 600; }
-            QComboBox:hover { border-color: #9db3ea; }
-            QComboBox::drop-down { border: 0; width: 24px; }
-            QComboBox QAbstractItemView { background: white; border: 1px solid #dbe3f0;
-                                          selection-background-color: #e8eefc;
-                                          selection-color: #1b2438; outline: 0; }
-            QPushButton { background: #eef2f9; color: #2f3b52; border: 0;
-                          border-radius: 12px; padding: 11px 14px; font-weight: 600; }
-            QPushButton:hover { background: #e2e9f6; }
-            QPushButton:pressed { background: #d6dff1; }
-            QPushButton:disabled { color: #a3adbf; background: #f2f4f8; }
-            QPushButton#soft { background: #ffffff; color: #2f55b8;
-                               border: 1px solid #d5e0fa; }
-            QPushButton#soft:hover { background: #f2f6ff; }
-            QPushButton#soft[speaking="true"] { background: #e3ebff;
-                border: 1px solid #7f9be0; color: #24478e; }
-            QPushButton#primary { color: white; background: qlineargradient(
-                x1:0, y1:0, x2:1, y2:1, stop:0 #4a74e0, stop:1 #2f55b8); }
-            QPushButton#primary:hover { background: qlineargradient(
-                x1:0, y1:0, x2:1, y2:1, stop:0 #5a82ea, stop:1 #3a62c9); }
-            QPushButton#primary:pressed { background: #274a9e; }
-            QProgressBar { background: #e6ecf7; border: 0; border-radius: 5px; }
-            QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                      stop:0 #6f8fe6, stop:1 #2f55b8);
-                                  border-radius: 5px; }
-            QFrame#divider { color: #e9edf4; }
-        """)
+        self.theme = "day"
         self.setFont(QFont("Segoe UI", 10))
-        target_font = QFont("Meiryo", 48)
-        self.target_label.setFont(target_font)
+        self.target_label.setFont(QFont("Meiryo", 48))
+        self._apply_theme(self.theme)
+
+    def _apply_theme(self, name):
+        if name not in THEMES:
+            name = "day"
+        self.theme = name
+        self.setStyleSheet(build_stylesheet(name))
+        self.canvas.set_theme(THEMES[name])
+        self.guide_character.set_theme(THEMES[name])
+        day = name == "day"
+        self.theme_button.setText("\u2600  Day" if day else "\U0001F319  Night")
+        self.theme_button.setToolTip(
+            "Switch to night theme" if day else "Switch to day theme"
+        )
+
+    def _toggle_theme(self):
+        self._apply_theme("night" if self.theme == "day" else "day")
+        self._save_settings()
 
     def _change_category(self, category):
         if category not in PRACTICE_SETS:
@@ -385,6 +346,7 @@ class MainWindow(QMainWindow):
 
     def _restore_settings(self):
         settings = load_settings()
+        self._apply_theme(settings.get("theme", "day"))
         width = settings.get("pen_width")
         if isinstance(width, int) and self.pen_slider.minimum() <= width <= self.pen_slider.maximum():
             self.pen_slider.setValue(width)
@@ -401,6 +363,7 @@ class MainWindow(QMainWindow):
             "pen_width": self.pen_slider.value(),
             "pen_color": self.canvas.pen_color.name(),
             "press_mode": self.press_radio.isChecked(),
+            "theme": self.theme,
         })
 
     def _save(self):

@@ -22,6 +22,7 @@ class WritingCanvas(QWidget):
         self.target_character = ""
         self.pen_width = 6
         self.press_mode = False
+        self.theme = None
         self.pen_color = QColor("#2563eb")
         self.input_manager = TrackpadInputManager(self)
         self.input_manager.status_changed.connect(self.trackpad_status_changed)
@@ -39,6 +40,13 @@ class WritingCanvas(QWidget):
     def set_pen_color(self, color):
         self.pen_color = QColor(color)
         self.update()
+
+    def set_theme(self, theme):
+        self.theme = theme
+        self.update()
+
+    def _c(self, key, default):
+        return self.theme[key] if self.theme else default
 
     def set_pen_width(self, width):
         self.pen_width = width
@@ -139,19 +147,20 @@ class WritingCanvas(QWidget):
         card = QPainterPath()
         card.addRoundedRect(self.rect().adjusted(0, 0, -1, -1), 14, 14)
         painter.setClipPath(card)
-        painter.fillRect(self.rect(), QColor("#fbfcff"))
-        painter.setPen(QPen(QColor("#edf0f5"), 1))
+        painter.fillRect(self.rect(), QColor(self._c("cv_bg", "#fbfcff")))
+        painter.setPen(QPen(QColor(self._c("cv_grid", "#edf0f5")), 1))
         spacing = 32
         for x in range(spacing, self.width(), spacing):
             painter.drawLine(x, 0, x, self.height())
         for y in range(spacing, self.height(), spacing):
             painter.drawLine(0, y, self.width(), y)
-        painter.setPen(QPen(QColor("#e0e5ec"), 1, Qt.PenStyle.DashLine))
+        painter.setPen(QPen(QColor(self._c("cv_axis", "#e0e5ec")), 1,
+                            Qt.PenStyle.DashLine))
         painter.drawLine(self.width() // 2, 0, self.width() // 2, self.height())
         painter.drawLine(0, self.height() // 2, self.width(), self.height() // 2)
 
         if self.target_character and not self.strokes:
-            painter.setPen(QColor(210, 216, 225, 125))
+            painter.setPen(QColor(*self._c("cv_ghost", (210, 216, 225, 125))))
             painter.setFont(self.font())
             font = painter.font()
             font.setFamily("Yu Gothic UI")
@@ -172,7 +181,7 @@ class WritingCanvas(QWidget):
                 path.lineTo(stroke[0] + QPointF(0.1, 0.1))
             painter.drawPath(path)
         painter.setClipping(False)
-        painter.setPen(QPen(QColor("#e1e7f2"), 1))
+        painter.setPen(QPen(QColor(self._c("cv_border", "#e1e7f2")), 1))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 14, 14)
         painter.end()
