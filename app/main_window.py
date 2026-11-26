@@ -138,7 +138,9 @@ class MainWindow(QMainWindow):
         self.pen_slider.setValue(6)
         self.pen_slider.valueChanged.connect(self.canvas.set_pen_width)
         canvas_controls.addWidget(self.pen_slider)
-        self.color_button = QPushButton("Color")
+        self.color_button = QPushButton()
+        self.color_button.setFixedSize(26, 26)
+        self.color_button.setToolTip("Pen color")
         self.color_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.color_button.clicked.connect(self._choose_color)
         self._show_color(QColor("#2563eb"))
@@ -347,9 +349,11 @@ class MainWindow(QMainWindow):
             self._show_color(color)
 
     def _show_color(self, color):
-        text = "#ffffff" if color.lightness() < 128 else "#111827"
         self.color_button.setStyleSheet(
-            f"QPushButton {{ background: {color.name()}; color: {text}; }}"
+            f"QPushButton {{ background: {color.name()}; border: 2px solid #cbd5e1;"
+            " border-radius: 13px; padding: 0; min-width: 26px; max-width: 26px;"
+            " min-height: 26px; max-height: 26px; }"
+            " QPushButton:hover { border-color: #64748b; }"
         )
 
     def _clear(self):
