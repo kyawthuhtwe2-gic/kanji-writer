@@ -45,3 +45,27 @@ def save_state(category, index, completed):
         tmp.replace(path)
     except OSError:
         pass
+
+
+def settings_path():
+    return state_path().with_name("settings.json")
+
+
+def load_settings():
+    """Return saved UI settings dict (pen_width, pen_color, press_mode) or {}."""
+    try:
+        data = json.loads(settings_path().read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_settings(settings):
+    try:
+        path = settings_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(settings), encoding="utf-8")
+        tmp.replace(path)
+    except OSError:
+        pass

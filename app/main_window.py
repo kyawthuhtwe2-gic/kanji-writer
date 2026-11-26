@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtTextToSpeech import QTextToSpeech
-from PySide6.QtGui import QColor, QFont, QKeySequence, QShortcut
+from PySide6.QtGui import QColor, QPainter, QPen, QFont, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QColorDialog,
     QComboBox,
@@ -18,9 +18,41 @@ from PySide6.QtWidgets import (
 
 from app.japanese_data import PRACTICE_SETS
 from app.kanji_recognition import compare_to_target
-from app.progress_store import load_state, save_state
+from app.progress_store import (
+    load_settings,
+    load_state,
+    save_settings,
+    save_state,
+)
 from app.stroke_guide import StrokeGuide
 from app.writing_canvas import WritingCanvas
+
+
+class ColorDot(QPushButton):
+    """Small round color swatch, painted by hand so it is always a true circle."""
+
+    SIZE = 16
+
+    def __init__(self, color):
+        super().__init__()
+        self.color = QColor(color)
+        self.setFixedSize(self.SIZE, self.SIZE)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setToolTip("Pen color")
+
+    def set_color(self, color):
+        self.color = QColor(color)
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        ring = QColor("#64748b") if self.underMouse() else QColor("#cbd5e1")
+        painter.setPen(QPen(ring, 1.5))
+        painter.setBrush(self.color)
+        painter.drawEllipse(self.rect().adjusted(1, 1, -1, -1))
+        painter.end()
 
 
 class MainWindow(QMainWindow):
@@ -38,6 +70,7 @@ class MainWindow(QMainWindow):
         self._init_speech()
         self._build_ui()
         self._set_style()
+        self._restore_settings()
         self.category_select.blockSignals(True)
         self.category_select.setCurrentText(self.category)
         self.category_select.blockSignals(False)
@@ -171,6 +204,7 @@ class MainWindow(QMainWindow):
         self.press_radio = QRadioButton("Press / Mouse")
         self.touch_radio.setChecked(True)
         self.press_radio.toggled.connect(self.canvas.set_press_mode)
+        self.press_radio.toggled.connect(self._save_settings)
         canvas_controls.addWidget(self.touch_radio)
         canvas_controls.addWidget(self.press_radio)
         canvas_controls.addSpacing(16)
@@ -179,15 +213,11 @@ class MainWindow(QMainWindow):
         self.pen_slider.setRange(2, 16)
         self.pen_slider.setValue(6)
         self.pen_slider.valueChanged.connect(self.canvas.set_pen_width)
+        self.pen_slider.valueChanged.connect(self._save_settings)
         self.pen_slider.setFixedWidth(140)
         canvas_controls.addWidget(self.pen_slider)
-        self.color_button = QPushButton()
-        self.color_button.setFixedSize(26, 26)
-        self.color_button.setToolTip("Pen color")
-        self.color_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.color_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.color_button = ColorDot("#2563eb")
         self.color_button.clicked.connect(self._choose_color)
-        self._show_color(QColor("#2563eb"))
         canvas_controls.addWidget(self.color_button)
         self.input_status = QLabel(
             "Move one finger across the canvas without pressing. "
@@ -353,11 +383,32 @@ class MainWindow(QMainWindow):
         self._refresh_character()
         self._save()
 
+    def _restore_settings(self):
+        settings = load_settings()
+        width = settings.get("pen_width")
+        if isinstance(width, int) and self.pen_slider.minimum() <= width <= self.pen_slider.maximum():
+            self.pen_slider.setValue(width)
+        color = QColor(str(settings.get("pen_color", "")))
+        if color.isValid():
+            self.canvas.set_pen_color(color)
+            self._show_color(color)
+            self._save_settings()
+        if settings.get("press_mode") is True:
+            self.press_radio.setChecked(True)
+
+    def _save_settings(self, *_):
+        save_settings({
+            "pen_width": self.pen_slider.value(),
+            "pen_color": self.canvas.pen_color.name(),
+            "press_mode": self.press_radio.isChecked(),
+        })
+
     def _save(self):
         save_state(self.category, self.character_index, self.completed)
 
     def closeEvent(self, event):
         self._save()
+        self._save_settings()
         super().closeEvent(event)
 
     def _refresh_character(self):
@@ -418,12 +469,7 @@ class MainWindow(QMainWindow):
             self._show_color(color)
 
     def _show_color(self, color):
-        self.color_button.setStyleSheet(
-            f"QPushButton {{ background: {color.name()}; border: 2px solid #cbd5e1;"
-            " border-radius: 13px; padding: 0; min-width: 26px; max-width: 26px;"
-            " min-height: 26px; max-height: 26px; }"
-            " QPushButton:hover { border-color: #64748b; }"
-        )
+        self.color_button.set_color(color)
 
     def _init_speech(self):
         self.speech = None
