@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QFont, QKeySequence, QShortcut
+from PySide6.QtGui import QColor, QFont, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
+    QColorDialog,
     QComboBox,
     QFrame,
     QHBoxLayout,
@@ -10,6 +11,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QProgressBar,
+    QRadioButton,
     QSlider,
     QVBoxLayout,
     QWidget,
@@ -32,8 +34,19 @@ class MainWindow(QMainWindow):
         self._build_ui()
         self._set_style()
         self._refresh_character()
-        self.clear_shortcut = QShortcut(QKeySequence(Qt.Key.Key_C), self)
-        self.clear_shortcut.activated.connect(self._clear)
+        self._shortcuts = []
+        for keys, action in (
+            ((Qt.Key.Key_C,), self._clear),
+            ((Qt.Key.Key_U,), self.canvas.undo),
+            ((Qt.Key.Key_R,), self.canvas.redo),
+            ((Qt.Key.Key_N,), self._next_character),
+            ((Qt.Key.Key_Return, Qt.Key.Key_Enter), self._recognize),
+        ):
+            for key in keys:
+                shortcut = QShortcut(QKeySequence(key), self)
+                shortcut.activated.connect(action)
+                self._shortcuts.append(shortcut)
+        self.clear_shortcut = self._shortcuts[0]
         QTimer.singleShot(10000, self._show_compatibility_result)
 
     @property
@@ -113,12 +126,23 @@ class MainWindow(QMainWindow):
         practice_layout.addWidget(self.canvas, 1)
 
         canvas_controls = QHBoxLayout()
+        self.touch_radio = QRadioButton("Touch (no click)")
+        self.press_radio = QRadioButton("Press / Mouse")
+        self.touch_radio.setChecked(True)
+        self.press_radio.toggled.connect(self.canvas.set_press_mode)
+        canvas_controls.addWidget(self.touch_radio)
+        canvas_controls.addWidget(self.press_radio)
         canvas_controls.addWidget(QLabel("Pen"))
         self.pen_slider = QSlider(Qt.Orientation.Horizontal)
         self.pen_slider.setRange(2, 16)
         self.pen_slider.setValue(6)
         self.pen_slider.valueChanged.connect(self.canvas.set_pen_width)
         canvas_controls.addWidget(self.pen_slider)
+        self.color_button = QPushButton("Color")
+        self.color_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.color_button.clicked.connect(self._choose_color)
+        self._show_color(QColor("#2563eb"))
+        canvas_controls.addWidget(self.color_button)
         self.input_status = QLabel(
             "Move one finger across the canvas without pressing. "
             "Waiting for native touchpad contacts…"
@@ -129,13 +153,13 @@ class MainWindow(QMainWindow):
         practice_layout.addLayout(canvas_controls)
 
         controls = QHBoxLayout()
-        self.check_button = QPushButton("Check writing")
+        self.check_button = QPushButton("Check writing (Enter)")
         self.check_button.setObjectName("primary")
         self.check_button.clicked.connect(self._recognize)
         controls.addWidget(self.check_button)
-        self._add_button(controls, "Undo", self.canvas.undo)
-        self._add_button(controls, "Redo", self.canvas.redo)
-        self._add_button(controls, "Clear", self._clear)
+        self._add_button(controls, "Undo (U)", self.canvas.undo)
+        self._add_button(controls, "Redo (R)", self.canvas.redo)
+        self._add_button(controls, "Clear (C)", self._clear)
         practice_layout.addLayout(controls)
         body.addWidget(practice_panel, 3)
 
@@ -190,21 +214,22 @@ class MainWindow(QMainWindow):
         self.progress_bar.setTextVisible(False)
         self.progress_bar.setFixedHeight(8)
         side_layout.addWidget(self.progress_bar)
-        self.next_button = QPushButton("Next character  →")
+        self.next_button = QPushButton("Next")
         self.next_button.setObjectName("primary")
         self.next_button.clicked.connect(self._next_character)
-        side_layout.addWidget(self.next_button)
-        self.reset_button = QPushButton("Reset progress")
+        self.reset_button = QPushButton("Reset")
         self.reset_button.clicked.connect(self._reset)
-        side_layout.addWidget(self.reset_button)
+        button_row = QHBoxLayout()
+        button_row.setSpacing(10)
+        button_row.addWidget(self.next_button, 1)
+        button_row.addWidget(self.reset_button, 1)
+        side_layout.addLayout(button_row)
 
         history_heading = QLabel("Recent practice")
         history_heading.setObjectName("sectionTitle")
         side_layout.addWidget(history_heading)
         self.history = QListWidget()
-        self.history.setMaximumHeight(120)
-        side_layout.addWidget(self.history)
-        side_layout.addStretch()
+        side_layout.addWidget(self.history, 1)
         body.addWidget(side_panel, 1)
 
     @staticmethod
@@ -311,9 +336,21 @@ class MainWindow(QMainWindow):
         self.history.insertItem(
             0, f"{self.current_character.character}  ·  {score:.0f}%"
         )
-        while self.history.count() > 5:
+        while self.history.count() > 50:
             self.history.takeItem(self.history.count() - 1)
         self._update_progress()
+
+    def _choose_color(self):
+        color = QColorDialog.getColor(self.canvas.pen_color, self, "Pen color")
+        if color.isValid():
+            self.canvas.set_pen_color(color)
+            self._show_color(color)
+
+    def _show_color(self, color):
+        text = "#ffffff" if color.lightness() < 128 else "#111827"
+        self.color_button.setStyleSheet(
+            f"QPushButton {{ background: {color.name()}; color: {text}; }}"
+        )
 
     def _clear(self):
         self.canvas.clear()

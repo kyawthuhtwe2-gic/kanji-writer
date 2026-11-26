@@ -64,5 +64,6 @@ KANJI = [
 PRACTICE_SETS = {
     "Hiragana": HIRAGANA,
     "Katakana": KATAKANA,
-    "Kanji": KANJI,
 }
+for _level in ("N5", "N4", "N3"):
+    PRACTICE_SETS[f"Kanji {_level}"] = [k for k in KANJI if k.jlpt == _level]

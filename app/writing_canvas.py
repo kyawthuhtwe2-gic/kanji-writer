@@ -21,12 +21,23 @@ class WritingCanvas(QWidget):
         self._redo_stack = []
         self.target_character = ""
         self.pen_width = 6
+        self.press_mode = False
+        self.pen_color = QColor("#2563eb")
         self.input_manager = TrackpadInputManager(self)
         self.input_manager.status_changed.connect(self.trackpad_status_changed)
         self.input_manager.contact_event.connect(self.trackpad_event)
 
     def set_target(self, character):
         self.target_character = character
+        self.update()
+
+    def set_press_mode(self, enabled):
+        """True: draw by pressing mouse/trackpad button. False: touch-only, no click."""
+        self.finish_stroke()
+        self.press_mode = enabled
+
+    def set_pen_color(self, color):
+        self.pen_color = QColor(color)
         self.update()
 
     def set_pen_width(self, width):
@@ -65,7 +76,7 @@ class WritingCanvas(QWidget):
         self._redo_stack.clear()
 
     def nativeEvent(self, event_type, message):
-        if self.input_manager.process_native_message(message):
+        if not self.press_mode and self.input_manager.process_native_message(message):
             return True, 0
         return super().nativeEvent(event_type, message)
 
@@ -74,12 +85,18 @@ class WritingCanvas(QWidget):
         super().showEvent(event)
 
     def mousePressEvent(self, event):
+        if self.press_mode and event.button() == Qt.MouseButton.LeftButton:
+            self.start_stroke(event.position())
         event.accept()
 
     def mouseMoveEvent(self, event):
+        if self.press_mode and event.buttons() & Qt.MouseButton.LeftButton:
+            self.extend_stroke(event.position())
         event.accept()
 
     def mouseReleaseEvent(self, event):
+        if self.press_mode:
+            self.finish_stroke()
         event.accept()
 
     def undo(self):
@@ -140,7 +157,7 @@ class WritingCanvas(QWidget):
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter,
                              self.target_character)
 
-        painter.setPen(QPen(QColor("#2563eb"), self.pen_width, Qt.PenStyle.SolidLine,
+        painter.setPen(QPen(self.pen_color, self.pen_width, Qt.PenStyle.SolidLine,
                             Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         for stroke in self.strokes:
             if not stroke:

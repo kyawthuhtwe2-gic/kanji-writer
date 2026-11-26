@@ -15,7 +15,7 @@ from practice.recognition import shape_similarity
 
 class PracticeDataTests(unittest.TestCase):
     def test_all_practice_sets_have_japanese_characters_and_stroke_counts(self):
-        self.assertEqual(set(PRACTICE_SETS), {"Hiragana", "Katakana", "Kanji"})
+        self.assertEqual(set(PRACTICE_SETS), {"Hiragana", "Katakana", "Kanji N5", "Kanji N4", "Kanji N3"})
         self.assertEqual(len(PRACTICE_SETS["Hiragana"]), 46)
         self.assertEqual(len(PRACTICE_SETS["Katakana"]), 46)
         for items in PRACTICE_SETS.values():
