@@ -102,10 +102,6 @@ QPushButton#soft { background: $soft_bg; color: $soft_text;
 QPushButton#soft:hover { background: $soft_hover; }
 QPushButton#soft[speaking="true"] { background: $speak_bg;
     border: 1px solid $speak_border; color: $speak_text; }
-QPushButton#theme { background: $soft_bg; color: $soft_text;
-                    border: 1px solid $soft_border; border-radius: 12px;
-                    padding: 8px 14px; min-width: 70px; }
-QPushButton#theme:hover { background: $soft_hover; }
 QPushButton#primary { color: white; background: qlineargradient(
     x1:0, y1:0, x2:1, y2:1, stop:0 $p1, stop:1 $p2); }
 QPushButton#primary:hover { background: qlineargradient(

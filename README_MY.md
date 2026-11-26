@@ -13,7 +13,8 @@ are ignored; there is no webcam or alternate input mode.
 - A Precision Touchpad/driver that delivers `PT_TOUCHPAD` `WM_POINTER` events
 - Internet access for the initial PySide6 installation
 
-Run `install.bat`, then `start.bat`. To install manually, run
+Run `start.bat`. On first run it creates the virtual environment and installs
+dependencies, then launches the app. To install manually, run
 `python -m pip install -r requirements.txt` and `python main.py`.
 `diagnose_trackpad.bat` opens the standalone input diagnostic.
 

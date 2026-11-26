@@ -123,12 +123,14 @@ class MainWindow(QMainWindow):
         self.category_select.addItems(PRACTICE_SETS.keys())
         self.category_select.currentTextChanged.connect(self._change_category)
         header.addWidget(self.category_select)
-        self.theme_button = QPushButton()
-        self.theme_button.setObjectName("theme")
-        self.theme_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.theme_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.theme_button.clicked.connect(self._toggle_theme)
-        header.addWidget(self.theme_button)
+        header.addSpacing(10)
+        header.addWidget(QLabel("THEME"))
+        self.theme_select = QComboBox()
+        self.theme_select.addItem("Day", "day")
+        self.theme_select.addItem("Night", "night")
+        self.theme_select.setToolTip("Theme")
+        self.theme_select.currentIndexChanged.connect(self._theme_selected)
+        header.addWidget(self.theme_select)
         root.addLayout(header)
 
         body = QHBoxLayout()
@@ -326,14 +328,12 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(build_stylesheet(name))
         self.canvas.set_theme(THEMES[name])
         self.guide_character.set_theme(THEMES[name])
-        day = name == "day"
-        self.theme_button.setText("\u2600  Day" if day else "\U0001F319  Night")
-        self.theme_button.setToolTip(
-            "Switch to night theme" if day else "Switch to day theme"
-        )
+        self.theme_select.blockSignals(True)
+        self.theme_select.setCurrentIndex(self.theme_select.findData(name))
+        self.theme_select.blockSignals(False)
 
-    def _toggle_theme(self):
-        self._apply_theme("night" if self.theme == "day" else "day")
+    def _theme_selected(self, index):
+        self._apply_theme(self.theme_select.itemData(index))
         self._save_settings()
 
     def _change_category(self, category):
