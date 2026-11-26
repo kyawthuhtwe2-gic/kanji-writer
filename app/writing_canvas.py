@@ -136,7 +136,10 @@ class WritingCanvas(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.fillRect(self.rect(), QColor("#ffffff"))
+        card = QPainterPath()
+        card.addRoundedRect(self.rect().adjusted(0, 0, -1, -1), 14, 14)
+        painter.setClipPath(card)
+        painter.fillRect(self.rect(), QColor("#fbfcff"))
         painter.setPen(QPen(QColor("#edf0f5"), 1))
         spacing = 32
         for x in range(spacing, self.width(), spacing):
@@ -168,4 +171,8 @@ class WritingCanvas(QWidget):
             if len(stroke) == 1:
                 path.lineTo(stroke[0] + QPointF(0.1, 0.1))
             painter.drawPath(path)
+        painter.setClipping(False)
+        painter.setPen(QPen(QColor("#e1e7f2"), 1))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 14, 14)
         painter.end()
