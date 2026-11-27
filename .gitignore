@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 build/
+*.spec
 dist/
 .pytest_cache/
 .mypy_cache/
@@ -17,7 +18,6 @@ env/
 
 # Exe
 release/
-.release/
 
 # Env / secrets
 .env
