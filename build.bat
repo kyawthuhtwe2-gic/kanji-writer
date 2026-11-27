@@ -19,6 +19,8 @@ if errorlevel 1 goto build_error
 echo [2/4] Building executable...
 "venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean --onefile --windowed ^
     --name KanjiWriter ^
+    --icon "assets\logo.ico" ^
+    --add-data "assets;assets" ^
     --add-data "practice\strokes;practice\strokes" ^
     main.py
 if errorlevel 1 goto build_error

@@ -10,6 +10,7 @@ Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=lowest
 ArchitecturesInstallIn64BitMode=x64compatible
+SetupIconFile=assets\logo.ico
 UninstallDisplayIcon={app}\KanjiWriter.exe
 
 [Tasks]
