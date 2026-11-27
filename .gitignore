@@ -15,6 +15,10 @@ venv/
 .venv/
 env/
 
+# Exe
+release/
+.release/
+
 # Env / secrets
 .env
 .env.*
