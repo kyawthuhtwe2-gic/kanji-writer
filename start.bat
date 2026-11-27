@@ -3,7 +3,7 @@ title Japanese Handwriting Practice
 cd /d "%~dp0"
 
 echo ==========================================
-echo Japanese Handwriting Practice
+echo Kanji Writer
 echo ==========================================
 
 rem ---- Setup: runs only when the environment is missing or incomplete ----
